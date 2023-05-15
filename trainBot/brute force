@@ -1,0 +1,218 @@
+import pyautogui as pt
+from time import sleep
+import pytesseract
+from PIL import ImageGrab
+import cv2
+import pytesseract
+import numpy as np
+
+current_speed = 0
+max_speed = 0
+target_speed = 0.0
+duration = 1000
+throttle_points = 0
+distance_to_station = 0
+current_state = " "
+
+speed_left = 988
+speed_top = 1134
+speed_width = 25
+speed_height = 20
+
+# Helper function
+def nav_to_image(image, clicks, off_x=0, off_y=0):
+    position = pt.locateCenterOnScreen(image, confidence=.7)
+
+
+    if position is None:
+        print(f'{image} not found..')
+        return 0
+    else:
+        pt.moveTo(position, duration=.1)
+        pt.moveRel(off_x,off_y, duration=.1)
+        pt.click(clicks=clicks, interval=.3)
+
+# Moves the character
+
+# w = move
+
+# s = brake
+
+def check_speed_limit():
+    speed_limit = 0
+    if pt.locateCenterOnScreen("images/30 speed limit.png", confidence=8) != None:
+        return 30
+    elif pt.locateCenterOnScreen("images/45 speed limit.png", confidence=8) != None:
+        return 45
+    elif pt.locateCenterOnScreen("images/75 speed limit.png", confidence=8) != None:
+        return 75
+    elif pt.locateCenterOnScreen("images/100 speed limit.png", confidence=8) != None:
+        return 100
+    else:
+        return 00
+
+def check_speed():
+    print("checking the speed")
+    image = cv2.cvtColor(np.array(ImageGrab.grab(bbox=(speed_left, speed_top, speed_left+speed_width, speed_top+speed_height))), cv2.COLOR_RGB2GRAY)
+    thresh = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+    speed = pytesseract.image_to_string(thresh, lang='eng',config='--psm 6')
+    try:
+        current_speed = int(speed)
+        return current_speed
+    except:
+        return 0
+
+    """
+    if pt.locateCenterOnScreen("images/0mph.png", confidence=7) != None:
+        return 0
+    elif pt.locateCenterOnScreen("images/15mph.png", confidence=7) != None:
+        return 15
+    elif pt.locateCenterOnScreen("images/20mph.png", confidence=7) != None:
+        return 20
+    elif pt.locateCenterOnScreen("images/30mph.png", confidence=7) != None:
+        return 30
+    elif pt.locateCenterOnScreen("images/40mph.png", confidence=7) != None:
+        return 40
+    elif pt.locateCenterOnScreen("images/70mph.png", confidence=7) != None:
+        return 70
+    elif pt.locateCenterOnScreen("images/100mph.png", confidence=7) != None:
+        return 100
+    else:
+        return 100
+
+"""
+
+
+
+
+
+   
+
+def move_character(key_press, duration, action='stopped'):
+    pt.keyDown(key_press)
+    if action == 'stopped':
+        print("stopping")
+        pt.keyDown('s')
+    elif action == 'drive':
+        pt.keyDown('w')
+        print("Throttle up for: ", duration, " seconds")
+
+    sleep(duration)
+    pt.keyUp(key_press)
+
+def get_to_speed(speed):
+    print("getting to speed ", speed)
+    if speed == 0:
+        pt.keyDown('s')
+        sleep(4)
+        pt.keyUp('s')
+    elif speed == 15:
+        while pt.locateCenterOnScreen("images/15mph throttle.png", confidence=.9) == None:
+            smol_speed = check_speed()
+            print(smol_speed)
+            if smol_speed > speed:
+                pt.keyDown('s')
+                sleep(0.5)
+                pt.keyUp('s')
+            else:
+                pt.keyDown('w')
+                sleep(0.5)
+                pt.keyUp('w')
+    elif speed == 20:
+        while pt.locateCenterOnScreen("images/20mph throttle.png", confidence=.9) == None:
+            print("Attempting speed 20")
+            smol_speed = check_speed()
+            if smol_speed > speed:
+                print("throttle down")
+                pt.keyDown('s')
+                sleep(1)
+                pt.keyUp('s')
+            else:
+                print("Throttle up")
+                pt.keyDown('w')
+                sleep(1)
+                pt.keyUp('w')
+    elif speed == 30:
+        while pt.locateCenterOnScreen("images/30mph throttle.png", confidence=.9) == None:
+            smol_speed = check_speed()
+            if smol_speed > speed:
+                pt.keyDown('s')
+                sleep(0.5)
+                pt.keyUp('s')
+            else:
+                pt.keyDown('w')
+                sleep(0.5)
+                pt.keyUp('w')
+
+
+
+            
+
+
+def locate_red():
+    position = pt.locateCenterOnScreen("images/redSignal.png", confidence=.9)
+
+    if position is None:
+        return False
+    else:
+        print("RED SIGNAL!")
+        return True
+    
+def locate_yellow():
+    position = pt.locateCenterOnScreen("images/yellowSignal.png", confidence=.9)
+
+    if position is None:
+        return False
+    else:
+        print("Yellow signal")
+        return True
+    
+def aws_check():
+    position = pt.locateCenterOnScreen("images/warning.png", confidence=.9)
+
+    if position is None:
+        return False
+    else:
+        print("AWS recognised")
+        pt.keyDown('q')
+        sleep(0.2)
+        pt.keyUp('q')
+        print("AWS delt with")
+    
+def locate_station():
+    position = pt.locateCenterOnScreen("images/stopToLoadPassengers.png", confidence=.7)
+
+    if position is None:
+        return False
+    else:
+        print("Need to stop at station")
+        return True
+
+# start the program
+sleep(5)
+print("Program started")
+while duration != 0:
+    #aws_check()
+#    if locate_station():
+#        target_speed = 15
+#        get_to_speed(target_speed)
+#        sleep(10)
+#        get_to_speed(0)
+    
+    current_speed = check_speed()
+
+    if not locate_red():
+        target_speed = 20
+        print(target_speed)
+        if target_speed == check_speed():
+            print("Current speed matches target speed")
+        elif target_speed > current_speed:
+            if throttle_points == 100:
+                print("Throttle is full cannot drive faster")
+            else:
+                get_to_speed(target_speed)  
+    else:
+        print("Signal ahead is red, train is stopped")
+        move_character('s', 4, 'stopped')
+duration -= 1
+

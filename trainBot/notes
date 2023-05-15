@@ -1,0 +1,11 @@
+20
+10s at 20 mph
+the reduce it to 15 for the last 10s
+
+It takes 30s to get to 100mph  1.49m/s acceleration
+it takes 13s to brake from 100mph - 0  727.3m stopping distance from 100mph  and brakes at 3.4388ms
+It takes 3s to get to throttle to full
+each press of w is worth 0.25 points
+full throttle is 100 points
+
+
